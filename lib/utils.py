@@ -30,14 +30,14 @@ def read_data(path="..//data/train/", file_extension=".png", descriptor_type=Non
                     data.append(descriptor)
                     data_labels.append(numeric_label)
                 else:
-                    data.append(img)
+                    data.append(cv.cvtColor(img, cv.COLOR_BGR2GRAY))
                     data_labels.append(numeric_label)
                 counter_samples += 1
         print(counter_samples, "images read of class", label, "- numeric label:", numeric_label)
         counter_samples = 0
         numeric_label += 1
 
-    return np.array(data), np.array(data_labels)
+    return np.array(data).squeeze(), np.array(data_labels)
 
 
 if __name__ == "__main__":
