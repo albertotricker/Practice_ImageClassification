@@ -2,11 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2 as cv
 import os
-
 from itertools import compress
 from lib.LBP import LBP
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 from sklearn.utils.multiclass import unique_labels
+
 
 class cross_validation:
     """
@@ -27,6 +27,7 @@ class cross_validation:
         for train_index, test_index in kf.split(data):
             self.train_index.append(train_index)
             self.test_index.append(test_index)
+
     def compute(self, i):
         """
         :param i: integer, iteration of the kfold.
@@ -36,8 +37,11 @@ class cross_validation:
         kf_train_labels, kf_test_labels = self.labels[self.train_index[i]], self.labels[self.test_index[i]]
         self.model.fit(kf_train, kf_train_labels)
         prediction = self.model.predict(kf_test)
-        acc = np.sum(np.equal(kf_test_labels, prediction)) / len(kf_test_labels)
-        return acc
+        acc = accuracy_score(kf_test_labels, prediction)
+        precision = precision_score(kf_test_labels, prediction)
+        recall = recall_score(kf_test_labels, prediction)
+        f1 = f1_score(kf_test_labels, prediction)
+        return [acc, precision, recall, f1]
 
 
 def read_data(path="..//data/train/", file_extension=".png", descriptor_type=None, lbp_method="basic"):
@@ -59,24 +63,41 @@ def read_data(path="..//data/train/", file_extension=".png", descriptor_type=Non
 
     numeric_label = 0
     counter_samples = 0
+    if descriptor_type == "hog":
+        hog = cv.HOGDescriptor()
+    elif descriptor_type == "lbp":
+        lbp = LBP()
     for label in labels:
         for filename in os.listdir(path+label):
             if filename.endswith(file_extension):
                 filename = path + label + "/" + filename
                 img = cv.imread(filename)
                 if descriptor_type == "hog":
-                    hog = cv.HOGDescriptor()
                     descriptor = hog.compute(img)
                     data.append(descriptor)
                     data_labels.append(numeric_label)
                 elif descriptor_type == "lbp":
-                    lbp = LBP()
+                    img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
                     descriptor = lbp.compute(img, method=lbp_method)
                     data.append(descriptor)
                     data_labels.append(numeric_label)
                 else:
                     data.append(cv.cvtColor(img, cv.COLOR_BGR2GRAY))
                     data_labels.append(numeric_label)
+                # if descriptor_type == "hog":
+                #     hog = cv.HOGDescriptor()
+                #     descriptor = hog.compute(img)
+                #     data.append(descriptor)
+                #     data_labels.append(numeric_label)
+                # elif descriptor_type == "lbp":
+                #     lbp = LBP()
+                #     img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+                #     descriptor = lbp.compute(img, method=lbp_method)
+                #     data.append(descriptor)
+                #     data_labels.append(numeric_label)
+                # else:
+                #     data.append(cv.cvtColor(img, cv.COLOR_BGR2GRAY))
+                #     data_labels.append(numeric_label)
                 counter_samples += 1
         print(counter_samples, "images read of class", label, "- numeric label:", numeric_label)
         counter_samples = 0
